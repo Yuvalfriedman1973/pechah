@@ -20,12 +20,9 @@
     html, body {
       width: 100%; min-height: 100%;
       overflow-x: hidden;
-      overflow-y: hidden;
+      overflow-y: auto;
       font-family: 'Heebo', sans-serif;
       background: #0d0805;
-    }
-    body.revealed {
-      overflow-y: auto;
     }
 
     /* ── Stars canvas ── */
@@ -44,20 +41,14 @@
       z-index: 1; pointer-events: none;
     }
 
-    /* ── Scrollable scene wrapper ── */
+    /* ── Scene wrapper – always in normal document flow ── */
     .scene {
-      position: fixed; inset: 0;
+      position: relative;
+      min-height: 100svh;
       z-index: 2;
       display: flex;
       align-items: center;
       justify-content: center;
-      padding: 24px;
-      overflow-y: auto;
-    }
-    body.revealed .scene {
-      position: relative;
-      min-height: 100dvh;
-      align-items: flex-start;
       padding: 32px 16px 48px;
     }
 
@@ -532,18 +523,13 @@
     setTimeout(() => document.body.classList.add('parted'), 2300);
     setTimeout(() => {
       document.body.classList.add('revealed');
-      // After card fades in, switch to normal scroll flow
-      setTimeout(() => {
-        const scene = document.querySelector('.scene');
-        scene.style.position = 'relative';
-        scene.style.minHeight = '100svh';
-        scene.style.alignItems = 'flex-start';
-        scene.style.padding = '32px 16px 48px';
-        document.body.style.overflowY = 'auto';
-        // Remove sea panels from DOM so they don't block touch
-        document.querySelectorAll('.sea-panel').forEach(el => el.remove());
-      }, 1500);
+      document.body.style.overflowY = 'auto';
+      document.body.style.overflowX = 'hidden';
     }, 4300);
+    // Remove sea panels after animation so they don't block touches
+    setTimeout(() => {
+      document.querySelectorAll('.sea-panel').forEach(el => el.remove());
+    }, 6500);
   </script>
 </body>
 </html>
