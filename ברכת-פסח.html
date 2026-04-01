@@ -1,0 +1,549 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>חג פסח שמח — פק״ל</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;700;900&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --navy:  #1d4e6b;
+      --teal:  #3db5a5;
+      --gold:  #f4d03f;
+      --gold2: #f0b429;
+      --cream: #fdf2e9;
+    }
+
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+    html, body {
+      width: 100%; min-height: 100%;
+      overflow-x: hidden;
+      overflow-y: hidden;
+      font-family: 'Heebo', sans-serif;
+      background: #0d0805;
+    }
+    body.revealed {
+      overflow-y: auto;
+    }
+
+    /* ── Stars canvas ── */
+    #stars-canvas {
+      position: fixed; inset: 0; z-index: 0; pointer-events: none;
+    }
+
+    /* ── Warm golden glow behind card ── */
+    .center-glow {
+      position: fixed;
+      top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      width: 700px; height: 700px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(244,208,63,.07) 0%, transparent 65%);
+      z-index: 1; pointer-events: none;
+    }
+
+    /* ── Scrollable scene wrapper ── */
+    .scene {
+      position: fixed; inset: 0;
+      z-index: 2;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      overflow-y: auto;
+    }
+    body.revealed .scene {
+      position: relative;
+      min-height: 100dvh;
+      align-items: flex-start;
+      padding: 32px 16px 48px;
+    }
+
+    /* ───────── SEA PANELS ───────── */
+    .sea-panel {
+      position: fixed; top: 0; height: 100%; width: 50%;
+      z-index: 30;
+      transition: transform 2.1s cubic-bezier(.86,0,.07,1);
+      overflow: hidden;
+    }
+    .sea-panel-left  { left:  0; background: linear-gradient(165deg, #051828 0%, #0b3460 30%, #1a6491 60%, #2980b9 100%); }
+    .sea-panel-right { right: 0; background: linear-gradient(15deg,  #051828 0%, #0b3460 30%, #1a6491 60%, #2980b9 100%); }
+
+    /* Inner shimmer lines (wave texture) */
+    .sea-panel::before {
+      content: '';
+      position: absolute; inset: 0;
+      background: repeating-linear-gradient(
+        0deg,
+        transparent, transparent 38px,
+        rgba(255,255,255,.025) 38px, rgba(255,255,255,.025) 39px
+      );
+      animation: wave-drift 5s ease-in-out infinite alternate;
+    }
+    @keyframes wave-drift {
+      from { transform: translateY(0); }
+      to   { transform: translateY(-18px); }
+    }
+    .sea-panel-right::before { animation-direction: alternate-reverse; }
+
+    /* Centre seam glow */
+    .sea-panel-left::after, .sea-panel-right::after {
+      content: '';
+      position: absolute; top: 0; height: 100%; width: 5px;
+      background: linear-gradient(180deg,
+        transparent 0%,
+        rgba(255,255,255,.25) 15%,
+        rgba(200,240,255,.9)  50%,
+        rgba(255,255,255,.25) 85%,
+        transparent 100%);
+    }
+    .sea-panel-left::after  { right: 0; }
+    .sea-panel-right::after { left:  0; }
+
+    /* Ripple bubbles */
+    .ripple {
+      position: absolute; border-radius: 50%;
+      border: 1px solid rgba(255,255,255,.15);
+      animation: ripple-out var(--d) ease-out var(--dl) infinite;
+    }
+    @keyframes ripple-out {
+      0%   { transform: scale(0); opacity: .7; }
+      100% { transform: scale(3.5); opacity: 0; }
+    }
+
+    /* Parted state */
+    body.parted .sea-panel-left  { transform: translateX(-100%); }
+    body.parted .sea-panel-right { transform: translateX(100%); }
+
+    /* Centred greeting above both panels */
+    .sea-text {
+      position: fixed; top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      z-index: 35;
+      font-size: 38px; font-weight: 900;
+      color: rgba(255,255,255,.9);
+      letter-spacing: 5px;
+      text-align: center;
+      text-shadow: 0 0 40px rgba(255,255,255,.5), 0 0 80px rgba(100,200,255,.3);
+      animation: sea-pulse 1.6s ease-in-out infinite;
+      transition: opacity .6s ease, transform .6s ease;
+      white-space: nowrap;
+    }
+    @keyframes sea-pulse {
+      0%,100% { opacity: .6; transform: translate(-50%,-50%) scale(1); }
+      50%      { opacity: 1;  transform: translate(-50%,-50%) scale(1.04); }
+    }
+    body.parted .sea-text { opacity: 0; transform: translate(-50%,-60%); pointer-events: none; }
+
+    .sea-logo {
+      position: fixed; top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      z-index: 35;
+      background: #fff;
+      border-radius: 18px;
+      padding: 16px 30px 12px;
+      box-shadow: 0 4px 28px rgba(0,0,0,.4);
+      transition: opacity .8s ease, transform .8s ease;
+    }
+    .sea-logo svg { display: block; width: 200px; }
+    body.parted .sea-logo { opacity: 0; transform: translate(-50%, -60%); pointer-events: none; }
+
+    /* ───────── CARD ───────── */
+    .card {
+      position: relative; z-index: 5;
+      width: 100%; max-width: 660px;
+      padding: 48px 56px;
+      text-align: center;
+      opacity: 0;
+      transform: translateY(52px) scale(.94);
+      transition: opacity 1.5s ease, transform 1.5s cubic-bezier(.16,1,.3,1);
+    }
+    body.revealed .card { opacity: 1; transform: translateY(0) scale(1); }
+
+    /* Glassmorphism background */
+    .card::before {
+      content: '';
+      position: absolute; inset: 0;
+      border-radius: 28px;
+      background: linear-gradient(140deg,
+        rgba(13,8,5,.88) 0%,
+        rgba(20,12,7,.90) 50%,
+        rgba(13,8,5,.88) 100%);
+      border: 1px solid rgba(244,208,63,.18);
+      backdrop-filter: blur(28px);
+      -webkit-backdrop-filter: blur(28px);
+      box-shadow:
+        0 0 0 1px rgba(244,208,63,.06) inset,
+        0 32px 80px rgba(0,0,0,.65),
+        0 0 70px rgba(244,208,63,.04);
+    }
+    /* Corner gradient accents */
+    .card::after {
+      content: '';
+      position: absolute; inset: 0;
+      border-radius: 28px;
+      background:
+        radial-gradient(circle at 100% 0%, rgba(244,208,63,.07) 0%, transparent 45%),
+        radial-gradient(circle at 0%   100%, rgba(61,181,165,.05) 0%, transparent 45%);
+      pointer-events: none;
+    }
+
+    /* ── Logo pill ── */
+    .logo-wrap {
+      position: relative; z-index: 1;
+      display: inline-block;
+      background: #fff;
+      border-radius: 18px;
+      padding: 16px 30px 12px;
+      margin-bottom: 30px;
+      box-shadow:
+        0 4px 28px rgba(0,0,0,.35),
+        0 0 0 1px rgba(244,208,63,.12),
+        0 0 36px rgba(244,208,63,.08);
+    }
+    .logo-svg { display: block; width: 160px; }
+
+    /* ── Passover title ── */
+    .title {
+      position: relative; z-index: 1;
+      font-size: 60px; font-weight: 900; line-height: 1.05;
+      margin-bottom: 8px;
+      background: linear-gradient(120deg, #e8c93a 0%, #f4d03f 22%, #f8e270 50%, #f0b429 78%, #f4d03f 100%);
+      background-size: 300% auto;
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      background-clip: text;
+      animation: shimmer 5s linear infinite;
+    }
+    @keyframes shimmer {
+      0%   { background-position:   0% 50%; }
+      100% { background-position: 300% 50%; }
+    }
+
+    .subtitle {
+      position: relative; z-index: 1;
+      font-size: 17px; font-weight: 300;
+      color: rgba(245,203,167,.72);
+      letter-spacing: 4px;
+      margin-bottom: 26px;
+    }
+
+    /* ── Divider ── */
+    .divider {
+      position: relative; z-index: 1;
+      display: flex; align-items: center; gap: 16px;
+      margin-bottom: 26px;
+    }
+    .div-line {
+      flex: 1; height: 1px;
+      background: linear-gradient(90deg, transparent, rgba(244,208,63,.35), transparent);
+    }
+    .div-gem { color: var(--gold); font-size: 11px; letter-spacing: 6px; }
+
+    /* ── Message ── */
+    .message {
+      position: relative; z-index: 1;
+      font-size: 17px; font-weight: 300;
+      line-height: 2.1; color: var(--cream);
+      margin-bottom: 26px;
+    }
+    .message strong { font-weight: 700; color: var(--gold); }
+
+    /* ── Dayenu box ── */
+    .dayenu {
+      position: relative; z-index: 1;
+      text-align: right;
+      padding: 22px 26px;
+      margin-bottom: 26px;
+      border-radius: 14px;
+      background: rgba(61,181,165,.05);
+      border: 1px solid rgba(61,181,165,.14);
+      border-right: 3px solid var(--teal);
+    }
+    .dayenu-title {
+      font-size: 22px; font-weight: 900;
+      color: var(--teal);
+      letter-spacing: 2px;
+      margin-bottom: 12px;
+    }
+    .dayenu-line {
+      font-size: 15px; font-weight: 300;
+      color: #fdebd0; line-height: 2.2;
+    }
+    .dayenu-line strong { font-weight: 700; color: var(--gold); }
+
+    /* ── Signature ── */
+    .signature {
+      position: relative; z-index: 1;
+      font-size: 14px; font-weight: 300;
+      color: rgba(170,183,184,.68);
+      line-height: 2;
+    }
+    .signature strong { font-weight: 700; color: rgba(244,208,63,.82); font-size: 16px; }
+
+    /* ── Floating particles ── */
+    .particle {
+      position: fixed; border-radius: 50%;
+      pointer-events: none; z-index: 10; opacity: 0;
+      animation: rise var(--d) ease-in var(--dl) infinite;
+    }
+    @keyframes rise {
+      0%   { opacity: 0;            transform: translateY(0)      translateX(0)                   scale(.5); }
+      5%   { opacity: var(--op); }
+      50%  {                         transform: translateY(-50vh)  translateX(var(--drift))         scale(1); }
+      95%  { opacity: .05; }
+      100% { opacity: 0;            transform: translateY(-115vh) translateX(calc(var(--drift)*1.4)) scale(.5); }
+    }
+    /* ── Rotate hint ── */
+    .rotate-hint {
+      position: fixed;
+      bottom: 32px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 40;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+      opacity: 1;
+      transition: opacity .6s ease;
+      pointer-events: none;
+    }
+    .rotate-hint .phone-icon {
+      font-size: 42px;
+      animation: rotate-bounce 2s ease-in-out infinite;
+      display: block;
+      line-height: 1;
+    }
+    @keyframes rotate-bounce {
+      0%,100% { transform: rotate(0deg); }
+      35%,65% { transform: rotate(-90deg); }
+    }
+    .rotate-hint span {
+      font-size: 13px;
+      font-weight: 400;
+      color: rgba(255,255,255,.85);
+      letter-spacing: 1px;
+      white-space: nowrap;
+      text-shadow: 0 1px 6px rgba(0,0,0,.5);
+    }
+    @media (orientation: landscape) {
+      .rotate-hint { display: none; }
+    }
+    body.parted .rotate-hint { opacity: 0; }
+
+    /* ── Mobile responsive ── */
+    @media (max-width: 600px) {
+      .card { padding: 32px 24px; }
+      .title { font-size: 38px; }
+      .subtitle { font-size: 14px; letter-spacing: 2px; }
+      .message { font-size: 15px; line-height: 1.9; }
+      .dayenu-title { font-size: 18px; }
+      .dayenu-line { font-size: 14px; }
+      .dayenu { padding: 18px 20px; }
+      .logo-wrap { padding: 12px 20px 10px; }
+      .logo-svg { width: 130px; }
+      .sea-logo svg { width: 150px; }
+      .signature { font-size: 13px; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Stars -->
+  <canvas id="stars-canvas"></canvas>
+
+  <!-- Centre glow -->
+  <div class="center-glow"></div>
+
+  <!-- Card scene -->
+  <div class="scene">
+    <div class="card">
+
+      <!-- פק״ל Logo (SVG recreation) -->
+      <div class="logo-wrap">
+        <svg class="logo-svg" viewBox="0 0 200 225" xmlns="http://www.w3.org/2000/svg">
+          <polygon points="100,13 91,29 109,29" fill="#1d3d5c"/>
+          <polygon points="131,20 139,31 131,42 123,31" fill="#e8b425"/>
+          <polygon points="154,43 162,54 154,65 146,54" fill="#4d6b3c"/>
+          <polygon points="162,95 153,79 171,79" fill="#1d3d5c"/>
+          <polygon points="154,105 162,116 154,127 146,116" fill="#e8b425"/>
+          <polygon points="131,128 139,139 131,150 123,139" fill="#4d6b3c"/>
+          <polygon points="100,157 91,141 109,141" fill="#1d3d5c"/>
+          <polygon points="69,128 77,139 69,150 61,139" fill="#e8b425"/>
+          <polygon points="46,105 54,116 46,127 38,116" fill="#4d6b3c"/>
+          <polygon points="38,75 29,91 47,91" fill="#1d3d5c"/>
+          <polygon points="46,43 54,54 46,65 38,54" fill="#e8b425"/>
+          <polygon points="69,20 77,31 69,42 61,31" fill="#4d6b3c"/>
+          <text x="100" y="185" font-family="Heebo, Arial Black, sans-serif" font-weight="900" font-size="26" fill="#1d3d5c" text-anchor="middle">פק״ל במילואים</text>
+          <text x="100" y="205" font-family="Heebo, Arial, sans-serif" font-weight="400" font-size="11" fill="#555555" text-anchor="middle">מחברים אנשים - יוצרים קהילה</text>
+        </svg>
+      </div>
+
+      <!-- Title -->
+      <div class="title">חג פסח שמח</div>
+      <div class="subtitle">וחג כשר לצוות פרידמן</div>
+
+      <!-- Divider -->
+      <div class="divider">
+        <div class="div-line"></div>
+        <div class="div-gem">✦ ✦ ✦</div>
+        <div class="div-line"></div>
+      </div>
+
+      <!-- Message -->
+      <div class="message">
+        לצוות שלי האהוב<br>
+        כמו שבני ישראל יצאו ממצרים — <strong>יחד</strong><br>
+        כך גם אנחנו עוברים כל אתגר <strong>ביחד</strong><br><br>
+        אני אסיר תודה על <strong>הכישרון המסירות והלב הגדול</strong><br>
+        שכל אחד מכם מביא כל יום מחדש<br><br>
+        וגם אסיר תודה על כל הצחוקים ההתנגדויות (עדי) :)<br>
+        שלמרות הכול אתם תמיד בעניין ומבינים את המורכבויות
+      </div>
+
+      <!-- Dayenu -->
+      <div class="dayenu">
+        <div class="dayenu-title">דַּיֵּנוּ</div>
+        <div class="dayenu-line">
+          אם הייתם רק מקצועיים — דַּיֵּנוּ<br>
+          אם הייתם רק יצירתיים — דַּיֵּנוּ<br>
+          אם הייתם רק אנשים טובים — דַּיֵּנוּ<br>
+          <strong style="display:block;text-align:center">ואתם כל אלה יחד — אין מילים לתאר את הזכות</strong>
+          <strong style="display:block;text-align:center">לעבוד ולהכיר אתכם, לדעת שתפיסת האחריות שלכם את המשימה היא</strong>
+          <strong style="display:block;text-align:center">100% ולא פחות</strong>
+          <strong style="display:block;text-align:center">כל פעם מרשים אותי מחדש, המון תודה לכם</strong>
+        </div>
+      </div>
+
+      <!-- Signature -->
+      <div class="signature">
+        מאחל לכם חג חירות שמח ומנוחה אמיתית ומשפחתית<br>
+        <strong>יובל</strong>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Logo on opening screen -->
+  <div class="sea-logo">
+    <svg viewBox="0 0 200 225" xmlns="http://www.w3.org/2000/svg">
+      <polygon points="100,13 91,29 109,29" fill="#1d3d5c"/>
+      <polygon points="131,20 139,31 131,42 123,31" fill="#e8b425"/>
+      <polygon points="154,43 162,54 154,65 146,54" fill="#4d6b3c"/>
+      <polygon points="162,95 153,79 171,79" fill="#1d3d5c"/>
+      <polygon points="154,105 162,116 154,127 146,116" fill="#e8b425"/>
+      <polygon points="131,128 139,139 131,150 123,139" fill="#4d6b3c"/>
+      <polygon points="100,157 91,141 109,141" fill="#1d3d5c"/>
+      <polygon points="69,128 77,139 69,150 61,139" fill="#e8b425"/>
+      <polygon points="46,105 54,116 46,127 38,116" fill="#4d6b3c"/>
+      <polygon points="38,75 29,91 47,91" fill="#1d3d5c"/>
+      <polygon points="46,43 54,54 46,65 38,54" fill="#e8b425"/>
+      <polygon points="69,20 77,31 69,42 61,31" fill="#4d6b3c"/>
+      <text x="100" y="185" font-family="Heebo, Arial Black, sans-serif" font-weight="900" font-size="26" fill="#1d3d5c" text-anchor="middle">פק״ל במילואים</text>
+      <text x="100" y="205" font-family="Heebo, Arial, sans-serif" font-weight="400" font-size="11" fill="#555555" text-anchor="middle">מחברים אנשים - יוצרים קהילה</text>
+    </svg>
+  </div>
+
+  <!-- Rotate hint (portrait mobile only) -->
+  <div class="rotate-hint">
+    <div class="phone-icon">📱</div>
+  </div>
+
+  <!-- Sea panels (overtop everything, part to reveal card) -->
+  <div class="sea-panel sea-panel-left">
+    <div class="ripple" style="width:140px;height:140px;top:28%;left:25%;--d:4.5s;--dl:0s"></div>
+    <div class="ripple" style="width:80px; height:80px; top:62%;left:55%;--d:3s;  --dl:-1.2s"></div>
+    <div class="ripple" style="width:200px;height:200px;top:72%;left:15%;--d:5.5s;--dl:-2.3s"></div>
+  </div>
+  <div class="sea-panel sea-panel-right">
+    <div class="ripple" style="width:110px;height:110px;top:38%;left:40%;--d:3.8s;--dl:-.6s"></div>
+    <div class="ripple" style="width:160px;height:160px;top:18%;left:55%;--d:4.8s;--dl:-1.8s"></div>
+    <div class="ripple" style="width:70px; height:70px; top:66%;left:25%;--d:2.8s;--dl:-.9s"></div>
+  </div>
+
+
+  <script>
+    /* ── Stars canvas ── */
+    const canvas = document.getElementById('stars-canvas');
+    const ctx    = canvas.getContext('2d');
+    let W, H, stars;
+
+    function initCanvas() {
+      W = canvas.width  = window.innerWidth;
+      H = canvas.height = window.innerHeight;
+      stars = Array.from({length: 200}, () => ({
+        x:     Math.random() * W,
+        y:     Math.random() * H,
+        r:     Math.random() * 1.8 + .2,
+        phase: Math.random() * Math.PI * 2,
+        speed: Math.random() * .022 + .007,
+        gold:  Math.random() > .65
+      }));
+    }
+
+    function drawStars(t) {
+      ctx.clearRect(0, 0, W, H);
+      stars.forEach(s => {
+        const b = .12 + .88 * (.5 + .5 * Math.sin(t * s.speed + s.phase));
+        ctx.beginPath();
+        ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
+        ctx.fillStyle = s.gold
+          ? `rgba(244,208,63,${b.toFixed(2)})`
+          : `rgba(61,181,165,${(b * .6).toFixed(2)})`;
+        ctx.fill();
+      });
+    }
+
+    let t0 = null;
+    function loop(ts) {
+      if (!t0) t0 = ts;
+      drawStars((ts - t0) / 1000);
+      requestAnimationFrame(loop);
+    }
+    initCanvas();
+    window.addEventListener('resize', initCanvas);
+    requestAnimationFrame(loop);
+
+    /* ── Particles ── */
+    const pColors = ['#f4d03f','#f0b429','#f8e270','#3db5a5','#5ecdc0','#fdebd0'];
+    for (let i = 0; i < 32; i++) {
+      const el = document.createElement('div');
+      el.className = 'particle';
+      const sz    = Math.random() * 7 + 2;
+      const color = pColors[Math.floor(Math.random() * pColors.length)];
+      const drift = (Math.random() - .5) * 140;
+      el.style.cssText = `
+        width:${sz}px; height:${sz}px;
+        left:${Math.random()*100}vw;
+        bottom:${-10 - Math.random()*30}px;
+        background:${color};
+        box-shadow: 0 0 ${sz*2}px ${color};
+        --d:${(Math.random()*14+10).toFixed(1)}s;
+        --dl:-${(Math.random()*22).toFixed(1)}s;
+        --op:${(Math.random()*.5+.2).toFixed(2)};
+        --drift:${drift.toFixed(0)}px;
+      `;
+      document.body.appendChild(el);
+    }
+
+    /* ── Animation sequence ── */
+    setTimeout(() => document.body.classList.add('parted'), 2300);
+    setTimeout(() => {
+      document.body.classList.add('revealed');
+      // After card fades in, switch to normal scroll flow
+      setTimeout(() => {
+        const scene = document.querySelector('.scene');
+        scene.style.position = 'relative';
+        scene.style.minHeight = '100svh';
+        scene.style.alignItems = 'flex-start';
+        scene.style.padding = '32px 16px 48px';
+        document.body.style.overflowY = 'auto';
+        // Remove sea panels from DOM so they don't block touch
+        document.querySelectorAll('.sea-panel').forEach(el => el.remove());
+      }, 1500);
+    }, 4300);
+  </script>
+</body>
+</html>
